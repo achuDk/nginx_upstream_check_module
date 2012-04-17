@@ -7,7 +7,7 @@ index fd9ecbe..d3849b6 100644
  #include <ngx_http.h>
 
 +#if (NGX_UPSTREAM_CHECK_MODULE)
-+#include "ngx_http_upstream_check_handler.h"
++#include "ngx_http_upstream_check_module.h"
 +#endif
 +
 
@@ -45,7 +45,7 @@ index afc9b2e..1c0344e 100644
  #include <ngx_http.h>
 
 +#if (NGX_UPSTREAM_CHECK_MODULE)
-+#include "ngx_http_upstream_check_handler.h"
++#include "ngx_http_upstream_check_module.h"
 +#endif
 
  static ngx_int_t ngx_http_upstream_cmp_servers(const void *one,
