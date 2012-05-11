@@ -46,41 +46,48 @@ typedef struct {
 } __attribute__((packed)) ajp_raw_packet_t;
 
 typedef struct {
-    ngx_buf_t send;
-    ngx_buf_t recv;
+    ngx_buf_t          send;
+    ngx_buf_t          recv;
 
-    void *parser;
+    ngx_uint_t         state;
+    ngx_http_status_t  status;
 } ngx_http_check_ctx;
 
-/*state*/
+/* state */
 #define NGX_HTTP_CHECK_CONNECT_DONE     0x0001
 #define NGX_HTTP_CHECK_SEND_DONE        0x0002
 #define NGX_HTTP_CHECK_RECV_DONE        0x0004
 #define NGX_HTTP_CHECK_ALL_DONE         0x0008
 
 typedef struct {
-    ngx_pid_t  owner;
+    ngx_pid_t    owner;
 
-    ngx_msec_t access_time;
+    ngx_msec_t   access_time;
 
-    ngx_uint_t fall_count;
-    ngx_uint_t rise_count;
+    ngx_uint_t   fall_count;
+    ngx_uint_t   rise_count;
 
     ngx_atomic_t lock;
-    ngx_atomic_t business;
+    ngx_atomic_t busyness;
     ngx_atomic_t down;
 
-    ngx_uint_t access_count;
+    ngx_uint_t   access_count;
+
+    struct sockaddr  *sockaddr;
+    socklen_t         socklen;
 } ngx_http_check_peer_shm_t;
 
 typedef struct {
-    ngx_uint_t generation;
+    ngx_uint_t   generation;
 
-    ngx_uint_t state;
+    ngx_uint_t   checksum;
+    ngx_uint_t   state;
     ngx_atomic_t lock;
 
-    /*store the ngx_http_check_status_peer_t*/
-    ngx_http_check_peer_shm_t peers[0];
+    ngx_uint_t   number;
+
+    /* store ngx_http_check_status_peer_t */
+    ngx_http_check_peer_shm_t peers[1];
 } ngx_http_check_peers_shm_t;
 
 struct ngx_http_check_peer_s {
@@ -108,70 +115,11 @@ struct ngx_http_check_peer_s {
 
 struct ngx_http_check_peers_s {
     ngx_str_t                        check_shm_name;
+    ngx_uint_t                       checksum;
     ngx_array_t                      peers;
 
-    ngx_http_check_peers_shm_t       *peers_shm;
+    ngx_http_check_peers_shm_t      *peers_shm;
 };
-
-
-/*HTTP parser*/
-typedef void (*element_cb)(void *data, const char *at, size_t length);
-typedef void (*field_cb)(void *data, const char *field, size_t flen, const char *value, size_t vlen);
-
-
-typedef struct http_parser { 
-  int      cs;
-  size_t   body_start;
-  int      content_len;
-  int      status_code_n;
-  size_t   nread;
-  size_t   mark;
-  size_t   field_start;
-  size_t   field_len;
-
-  void    *data;
-
-  field_cb http_field;
-
-  element_cb http_version;
-  element_cb status_code;
-  element_cb reason_phrase;
-  element_cb header_done;
-  
-} http_parser;
-
-int http_parser_init(http_parser *parser);
-int http_parser_finish(http_parser *parser);
-size_t http_parser_execute(http_parser *parser, const char *data, size_t len, size_t off);
-int http_parser_has_error(http_parser *parser);
-int http_parser_is_finished(http_parser *parser);
-
-#define http_parser_nread(parser) (parser)->nread 
-
-typedef struct smtp_parser {
-  int        cs;
-  size_t     nread;
-  size_t     mark;
-
-  int        hello_reply_code;
-
-  void      *data;
-
-  element_cb domain;
-  element_cb greeting_text;
-  element_cb reply_code;
-  element_cb reply_text;
-  element_cb smtp_done;
-    
-} smtp_parser;
-
-int smtp_parser_init(smtp_parser *parser);
-int smtp_parser_finish(smtp_parser *parser);
-size_t smtp_parser_execute(smtp_parser *parser, const char *data, size_t len, size_t off);
-int smtp_parser_has_error(smtp_parser *parser);
-int smtp_parser_is_finished(smtp_parser *parser);
-
-#define http_parser_nread(parser) (parser)->nread 
 
 
 ngx_int_t ngx_http_upstream_check_status_handler(ngx_http_request_t *r);

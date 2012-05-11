@@ -15,8 +15,8 @@ Synopsis
         upstream cluster {
 
             # simple round-robin
-            server 127.0.0.1:3306;
-            server 127.0.0.1:1234;
+            server 192.168.0.1:80;
+            server 192.168.0.2:80;
 
             check interval=3000 rise=2 fall=5 timeout=1000;
 
@@ -30,7 +30,17 @@ Synopsis
         server {
             listen 80;
 
-            proxy_pass http://cluster;
+            location / {
+                proxy_pass http://cluster;
+            }
+
+            location /status {
+                check_status;
+
+                access_log   off;
+                allow SOME.IP.ADD.RESS;
+                deny all;
+           }
         }
 
     }
@@ -42,7 +52,7 @@ Directives
   check
     syntax: *check interval=milliseconds [fall=count] [rise=count]
     [timeout=milliseconds] [default_down=true|false]
-    [type=tcp|ssl_hello|smtp|mysql|pop3|imap|ajp]*
+    [type=tcp|ssl_hello|mysql|ajp]*
 
     default: *none, if parameters omitted, default parameters are
     interval=30000 fall=5 rise=2 timeout=1000 default_down=true type=tcp*
@@ -76,21 +86,10 @@ Directives
         3.  *http* sends a http requst packet, recvives and parses the http
             response to diagnose if the upstream server is alive.
 
-        4.  *smtp* sends a smtp requst packet, recvives and parses the smtp
-            response to diagnose if the upstream server is alive. The
-            response begins with '2' should be an OK response.
-
-        5.  *mysql* connects to the mysql server, recvives the greeting
+        4.  *mysql* connects to the mysql server, recvives the greeting
             response to diagnose if the upstream server is alive.
 
-        6.  *pop3* recvives and parses the pop3 response to diagnose if the
-            upstream server is alive. The response begins with '+' should be
-            an OK response.
-
-        7.  *imap* connects to the imap server, recvives the greeting
-            response to diagnose if the upstream server is alive.
-
-        8.  *ajp* sends a AJP Cping packet, recvives and parses the AJP
+        5.  *ajp* sends a AJP Cping packet, recvives and parses the AJP
             Cpong response to diagnose if the upstream server is alive.
 
   check_http_send
@@ -114,37 +113,16 @@ Directives
     description: These status codes indicate the upstream server's http
     response is ok, the backend is alive.
 
-  check_smtp_send
-    syntax: *check_smtp_send smtp_packet*
-
-    default: *"HELO smtp.localdomain\r\n"*
-
-    context: *upstream*
-
-    description: If you set the check type is smtp, then the check function
-    will sends this smtp packet to check the upstream server.
-
-  check_smtp_expect_alive
-    syntax: *check_smtp_expect_alive [smtp_2xx | smtp_3xx | smtp_4xx |
-    smtp_5xx]*
-
-    default: *smtp_2xx*
-
-    context: *upstream*
-
-    description: These status codes indicate the upstream server's smtp
-    response is ok, the backend is alive.
-
   check_shm_size
     syntax: *check_shm_size size*
 
-    default: *(number_of_checked_upstream_blocks + 1) * pagesize*
+    default: *1m*
 
     context: *http*
 
-    description: If you store hundreds of serveres in one upstream block,
-    the shared memory for health check may be not enough, you can enlarged
-    it by this directive.
+    description: Default size is one megabytes. If you check thousands of
+    serveres, the shared memory for health check may be not enough, you can
+    enlarge it with this directive.
 
   check_status
     syntax: *check_status*
@@ -154,19 +132,19 @@ Directives
     context: *location*
 
     description: Display the health checking servers' status by HTTP. This
-    directive is set in the http block.
+    directive should be set in the http block.
 
 Installation
     Download the latest version of the release tarball of this module from
     github (<http://github.com/yaoweibin/nginx_upstream_check_module>)
 
     Grab the nginx source code from nginx.org (<http://nginx.org/>), for
-    example, the version 0.7.67 (see nginx compatibility), and then build
+    example, the version 1.0.14 (see nginx compatibility), and then build
     the source with this module:
 
-        $ wget 'http://nginx.org/download/nginx-0.7.67.tar.gz'
-        $ tar -xzvf nginx-0.7.67.tar.gz
-        $ cd nginx-0.7.67/
+        $ wget 'http://nginx.org/download/nginx-1.0.14.tar.gz'
+        $ tar -xzvf nginx-1.0.14.tar.gz
+        $ cd nginx-1.0.14/
         $ patch -p1 < /path/to/nginx_http_upstream_check_module/check.patch
 
         $ ./configure --add-module=/path/to/nginx_http_upstream_check_module
@@ -174,21 +152,25 @@ Installation
         $ make
         $ make install
 
-    The patch just adds the support for Round-Robin upstream module. But
-    it's easy to expand my module to other upstream modules. See the patch
-    for detail.
+    The patch just adds the support for Round-Robin and Ip_hash upstream
+    module. But it's easy to expand my module to other upstream modules. See
+    the patch for detail.
+
+    If you want to add the support for upstream fair module, you can do it
+    like this:
+
+        $ git clone git://github.com/gnosek/nginx-upstream-fair.git
+        $ cd nginx-upstream-fair
+        $ patch -p2 < /path/to/nginx_http_upstream_check_module/upstream_fair.patch
+        $ cd /path/to/nginx-1.0.14
+        $ ./configure --add-module=/path/to/nginx_http_upstream_check_module --add-module=/path/to/nginx-upstream-fair-module
+        $ make
+        $ make install
 
 Compatibility
-    *   My test bed is 0.7.67 and 0.8.49.
+    *   My test bed is 0.7.67 and 0.8.49+.
 
 Notes
-    The http_response_parse.rl and smtp_response_parse.rl are ragel
-    (<http://www.complang.org/ragel/>) scripts , you can edit the script and
-    compile it like this:
-
-        $ ragel -G2 http_response_parse.rl
-        $ ragel -G2 smtp_response_parse.rl
-
 TODO
 Known Issues
     *   Developing
@@ -211,9 +193,9 @@ Copyright & License
 
     This module is licensed under the BSD license.
 
-    Copyright (C) 2010 by Weibin Yao <yaoweibin@gmail.com>.
+    Copyright (C) 2012 by Weibin Yao <yaoweibin@gmail.com>.
 
-    Copyright (C) 2010 by Matthieu Tourne.
+    Copyright (C) 2012 by Matthieu Tourne.
 
     All rights reserved.
 
