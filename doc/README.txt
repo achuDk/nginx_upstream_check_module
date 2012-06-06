@@ -1,14 +1,6 @@
 Name
     nginx_http_upstream_check_module - support health check with Nginx
 
-Status
-    This module is at its very early phase of development and considered
-    highly experimental. But you're encouraged to test it out on your side
-    and report any quirks that you experience.
-
-    We need your help! If you find this module useful and/or interesting,
-    please consider joining the development!
-
 Synopsis
     http {
 
@@ -151,6 +143,11 @@ Installation
 
         $ make
         $ make install
+
+Note
+    If you use nginx-1.2.1+ or nginx-1.3.0+, the nginx upstream round robin
+    module changed greatly. You should use the patch named
+    'check_1.2.1+.patch'.
 
     The patch just adds the support for Round-Robin and Ip_hash upstream
     module. But it's easy to expand my module to other upstream modules. See
