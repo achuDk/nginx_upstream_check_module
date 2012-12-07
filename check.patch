@@ -18,6 +18,8 @@ index 2785c8c..bf064cc 100644
          u->addrs[0].name.len = ngx_sprintf(p, "%V:%d",
                                             &u->host, ntohs(port)) - p;
          u->addrs[0].name.data = p;
+ 
+ 
 diff --git a/src/core/ngx_inet.h b/src/core/ngx_inet.h
 index c5a3d76..2b26643 100644
 --- a/src/core/ngx_inet.h

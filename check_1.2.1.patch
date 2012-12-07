@@ -1,3 +1,23 @@
+diff --git a/src/core/ngx_inet.c b/src/core/ngx_inet.c
+index 2785c8c..bf064cc 100644
+--- a/src/core/ngx_inet.c
++++ b/src/core/ngx_inet.c
+@@ -967,6 +967,7 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
+ 
+             len = ngx_sock_ntop((struct sockaddr *) sin, p, len, 1);
+ 
++            u->addrs[i].host = u->host;
+             u->addrs[i].name.len = len;
+             u->addrs[i].name.data = p;
+         }
+@@ -999,6 +1000,7 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
+             return NGX_ERROR;
+         }
+ 
++        u->addrs[0].host = u->host;
+         u->addrs[0].name.len = ngx_sprintf(p, "%V:%d",
+                                            &u->host, ntohs(port)) - p;
+         u->addrs[0].name.data = p;
 diff --git a/src/http/modules/ngx_http_upstream_ip_hash_module.c b/src/http/modules/ngx_http_upstream_ip_hash_module.c
 index 100ea34..642b01b 100644
 --- a/src/http/modules/ngx_http_upstream_ip_hash_module.c
